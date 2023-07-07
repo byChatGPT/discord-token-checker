@@ -42,6 +42,7 @@ async fn main() {
 
         match login {
             Ok(response) => {
+                println!("Status code: {}", response.status());
                 if response.status().is_success() {
                     println!("\x1b[32m[+] VALID {}\x1b[0m", token);
                     let mut f = OpenOptions::new()
@@ -55,7 +56,7 @@ async fn main() {
                 }
             }
             Err(_) => {
-                println!("\x1b[31m[-] INVALID {}\x1b[0m", token);
+                println!("\x1b[31m[-] ERROR {}\x1b[0m", token);
             }
         }
         println!("");
