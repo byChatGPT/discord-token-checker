@@ -1,5 +1,5 @@
 use base64;
-use rand::Rng;
+use rand::seq::SliceRandom;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use reqwest::{Client, Response};
 use std::fs::OpenOptions;
@@ -57,5 +57,7 @@ fn generate_random_string(length: usize) -> String {
         .chain((0..26).map(|i| (i + b'A') as char))
         .chain((0..10).map(|i| (i + b'0') as char))
         .collect();
-    (0..length).map(|_| *rng.choose(&characters).unwrap()).collect()
+    (0..length)
+        .map(|_| rng.choose(&characters).unwrap())
+        .collect()
 }
