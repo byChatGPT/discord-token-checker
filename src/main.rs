@@ -1,5 +1,6 @@
 use base64;
 use rand::seq::SliceRandom;
+use rand::thread_rng;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use reqwest::{Client, Response};
 use std::fs::OpenOptions;
@@ -51,13 +52,13 @@ async fn main() {
 }
 
 fn generate_random_string(length: usize) -> String {
-    let mut rng = rand::thread_rng();
+    let mut rng = thread_rng();
     let characters: Vec<char> = (0..26)
         .map(|i| (i + b'a') as char)
         .chain((0..26).map(|i| (i + b'A') as char))
         .chain((0..10).map(|i| (i + b'0') as char))
         .collect();
     (0..length)
-        .map(|_| rng.choose(&characters).unwrap())
+        .map(|_| characters.choose(&mut rng).unwrap())
         .collect()
 }
