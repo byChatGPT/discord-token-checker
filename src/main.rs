@@ -2,9 +2,11 @@ use base64;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
-use reqwest::{Client, Response};
+use reqwest::Client;
 use std::fs::OpenOptions;
 use std::io::{self, BufRead, Write};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 #[tokio::main]
 async fn main() {
@@ -16,7 +18,17 @@ async fn main() {
         .expect("Failed to read input");
     let id_to_token = base64::encode(id_to_token.trim().as_bytes());
 
-    loop {
+    // AtomicBool to track Ctrl+C signal
+    let running = Arc::new(AtomicBool::new(true));
+    let running_handle = running.clone();
+
+    // Set up Ctrl+C handler
+    ctrlc::set_handler(move || {
+        running_handle.store(false, Ordering::SeqCst);
+    })
+    .expect("Error setting Ctrl+C handler");
+
+    while running.load(Ordering::SeqCst) {
         let token = format!(
             "{}.{}",
             id_to_token,
